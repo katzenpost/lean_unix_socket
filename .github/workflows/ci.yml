@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      ELAN_VERSION: 4.2.4
+      ELAN_SHA256: 42b94d4244e8353142c456ec0e4ca6528fd898a6c604d4059f494e706e431f63
+    steps:
+      - uses: actions/checkout@v4
+      - name: install elan
+        run: |
+          curl -fsSLO "https://github.com/leanprover/elan/releases/download/v${ELAN_VERSION}/elan-x86_64-unknown-linux-gnu.tar.gz"
+          echo "${ELAN_SHA256}  elan-x86_64-unknown-linux-gnu.tar.gz" | sha256sum -c -
+          tar -xzf elan-x86_64-unknown-linux-gnu.tar.gz
+          ./elan-init -y --default-toolchain "$(cat lean-toolchain)" --no-modify-path
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: lean-sys is built for our toolchain
+        run: |
+          rev=$(sed -n 's/^lean-sys = .*rev = "\([0-9a-f]*\)".*/\1/p' rust/Cargo.toml)
+          theirs=$(curl -fsSL "https://raw.githubusercontent.com/katzenpost/lean-sys/$rev/lean-toolchain")
+          echo "lean-sys $rev: $theirs, ours: $(cat lean-toolchain)"
+          [ "$theirs" = "$(cat lean-toolchain)" ]
+      - run: cargo fmt --check
+        working-directory: rust
+      - run: cargo clippy --all-targets -- -D warnings
+        working-directory: rust
+      - run: cargo test
+        working-directory: rust
+      - run: lake build unix-socket-test && lake exe unix-socket-test

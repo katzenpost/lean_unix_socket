@@ -1,0 +1,17 @@
+[package]
+name = "lean-unix-socket"
+version = "0.1.0"
+edition = "2021"
+license = "AGPL-3.0-only"
+publish = false
+
+[lib]
+name = "lean_unix_socket"
+crate-type = ["staticlib"]
+
+[dependencies]
+libc = "0.2.190"
+lean-sys = { git = "https://github.com/katzenpost/lean-sys", rev = "ac11ff152cc82bccd0ef18f45384ac5acb091260", default-features = false, features = ["mimalloc"] }
+
+[profile.release]
+panic = "abort"
