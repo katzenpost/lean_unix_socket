@@ -3,7 +3,11 @@ name = "lean-unix-socket"
 version = "0.1.0"
 edition = "2021"
 license = "AGPL-3.0-only"
-publish = false
+description = "Unix domain stream sockets for Lean 4 programs on Linux: the Rust half of the Lean package lean_unix_socket"
+repository = "https://github.com/katzenpost/lean_unix_socket"
+readme = "../README.md"
+keywords = ["lean", "ffi", "unix-socket"]
+categories = ["external-ffi-bindings"]
 
 [lib]
 name = "lean_unix_socket"
@@ -11,7 +15,7 @@ crate-type = ["staticlib"]
 
 [dependencies]
 libc = "0.2.190"
-lean-sys = { git = "https://github.com/katzenpost/lean-sys", rev = "ac11ff152cc82bccd0ef18f45384ac5acb091260", default-features = false, features = ["mimalloc"] }
+lean-sys = { package = "katzenpost-lean-sys", version = "0.1.0", default-features = false, features = ["mimalloc"] }
 
 [profile.release]
 panic = "abort"
