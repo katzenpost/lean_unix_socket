@@ -11,7 +11,10 @@ use lean_sys::*;
 use std::ffi::c_void;
 use std::io::{self, Read};
 use std::net::Shutdown;
+#[cfg(target_os = "android")]
+use std::os::android::net::SocketAddrExt;
 use std::os::fd::AsRawFd;
+#[cfg(not(target_os = "android"))]
 use std::os::linux::net::SocketAddrExt;
 use std::os::unix::net::{SocketAddr, UnixListener, UnixStream};
 use std::sync::OnceLock;
