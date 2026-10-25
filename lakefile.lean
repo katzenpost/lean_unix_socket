@@ -1,7 +1,8 @@
 import Lake
 open Lake DSL System
 
-package lean_unix_socket
+package lean_unix_socket where
+  version := v!"0.1.0"
 
 @[default_target]
 lean_lib UnixSocket
