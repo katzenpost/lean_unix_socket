@@ -21,9 +21,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4e7648175b45a9a48536d676f68d918270699102aa8dab5496df06904c914600"
 
 [[package]]
-name = "lean-sys"
-version = "0.0.10"
-source = "git+https://github.com/katzenpost/lean-sys?rev=ac11ff152cc82bccd0ef18f45384ac5acb091260#ac11ff152cc82bccd0ef18f45384ac5acb091260"
+name = "katzenpost-lean-sys"
+version = "0.1.0"
+source = "git+https://github.com/katzenpost/lean-sys?rev=7b998184a82d6a6ddcc7626abf5eaac2e5345244#7b998184a82d6a6ddcc7626abf5eaac2e5345244"
 dependencies = [
  "libc",
  "memoffset",
@@ -35,7 +35,7 @@ dependencies = [
 name = "lean-unix-socket"
 version = "0.1.0"
 dependencies = [
- "lean-sys",
+ "katzenpost-lean-sys",
  "libc",
 ]
 
