@@ -325,7 +325,11 @@ mod tests {
 
     #[test]
     fn connect_refused() {
-        let e = Socket::connect(&name("connect_refused")).err().unwrap();
+        let path = name("connect_refused");
+        // A file socket refuses only once its file exists: leave one with nobody listening.
+        #[cfg(not(any(target_os = "linux", target_os = "android")))]
+        drop(UnixListener::bind(&path).unwrap());
+        let e = Socket::connect(&path).err().unwrap();
         assert_eq!(e.kind(), io::ErrorKind::ConnectionRefused);
     }
 }
