@@ -14,7 +14,7 @@ use std::net::Shutdown;
 #[cfg(target_os = "android")]
 use std::os::android::net::SocketAddrExt;
 use std::os::fd::AsRawFd;
-#[cfg(not(target_os = "android"))]
+#[cfg(target_os = "linux")]
 use std::os::linux::net::SocketAddrExt;
 use std::os::unix::net::{SocketAddr, UnixListener, UnixStream};
 use std::sync::OnceLock;
@@ -23,9 +23,23 @@ use std::thread;
 /// The address `path` names: the abstract name after a leading `@`, otherwise a file.
 pub fn address(path: &str) -> io::Result<SocketAddr> {
     match path.strip_prefix('@') {
-        Some(name) => SocketAddr::from_abstract_name(name),
+        Some(name) => abstract_address(name),
         None => SocketAddr::from_pathname(path),
     }
+}
+
+#[cfg(any(target_os = "linux", target_os = "android"))]
+fn abstract_address(name: &str) -> io::Result<SocketAddr> {
+    SocketAddr::from_abstract_name(name)
+}
+
+/// Abstract names are a Linux feature; elsewhere a socket needs a file path.
+#[cfg(not(any(target_os = "linux", target_os = "android")))]
+fn abstract_address(_name: &str) -> io::Result<SocketAddr> {
+    Err(io::Error::new(
+        io::ErrorKind::Unsupported,
+        "abstract socket names need Linux; use a file path",
+    ))
 }
 
 /// A connected stream and the address it was opened with, for error messages.
@@ -232,15 +246,30 @@ pub unsafe extern "C" fn lus_echo_once(path: b_lean_obj_arg) -> *mut lean_object
 mod tests {
     use super::*;
 
+    #[cfg(any(target_os = "linux", target_os = "android"))]
     fn name(test: &str) -> String {
         format!("@lean_unix_socket/{test}/{}", std::process::id())
     }
 
+    #[cfg(not(any(target_os = "linux", target_os = "android")))]
+    fn name(test: &str) -> String {
+        let dir = std::env::temp_dir();
+        format!("{}/lus-{test}-{}.sock", dir.display(), std::process::id())
+    }
+
     #[test]
     fn addresses() {
-        let a = address("@kpclientd").unwrap();
-        assert_eq!(a.as_abstract_name(), Some(&b"kpclientd"[..]));
-        assert_eq!(a.as_pathname(), None);
+        #[cfg(any(target_os = "linux", target_os = "android"))]
+        {
+            let a = address("@kpclientd").unwrap();
+            assert_eq!(a.as_abstract_name(), Some(&b"kpclientd"[..]));
+            assert_eq!(a.as_pathname(), None);
+        }
+        #[cfg(not(any(target_os = "linux", target_os = "android")))]
+        assert_eq!(
+            address("@kpclientd").unwrap_err().kind(),
+            io::ErrorKind::Unsupported
+        );
         let f = address("/run/kpclientd.sock").unwrap();
         assert_eq!(
             f.as_pathname().unwrap().to_str(),
@@ -296,7 +325,11 @@ mod tests {
 
     #[test]
     fn connect_refused() {
-        let e = Socket::connect(&name("connect_refused")).err().unwrap();
+        let path = name("connect_refused");
+        // A file socket refuses only once its file exists: leave one with nobody listening.
+        #[cfg(not(any(target_os = "linux", target_os = "android")))]
+        drop(UnixListener::bind(&path).unwrap());
+        let e = Socket::connect(&path).err().unwrap();
         assert_eq!(e.kind(), io::ErrorKind::ConnectionRefused);
     }
 }
